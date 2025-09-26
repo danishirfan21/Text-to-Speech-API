@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  tts-api:
+    build: .
+    container_name: tts-api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-your-refresh-secret-key}
+      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
+      - GOOGLE_CLOUD_KEY_FILE=/app/keys/google-cloud-key.json
+    volumes:
+      - ./keys:/app/keys:ro
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - tts-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: tts-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    networks:
+      - tts-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: tts-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - tts-api
+    restart: unless-stopped
+    networks:
+      - tts-network
+
+volumes:
+  redis-data:
+
+networks:
+  tts-network:
+    driver: bridge

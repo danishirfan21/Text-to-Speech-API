@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  tts-api-dev:
+    build:
+      context: .
+      target: builder
+    container_name: tts-api-dev
+    ports:
+      - "3000:3000"
+      - "9229:9229" # Debug port
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - REDIS_HOST=redis-dev
+      - REDIS_PORT=6379
+      - JWT_SECRET=dev-jwt-secret
+      - JWT_REFRESH_SECRET=dev-refresh-secret
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    command: npm run dev
+    depends_on:
+      - redis-dev
+    networks:
+      - tts-dev-network
+
+  redis-dev:
+    image: redis:7-alpine
+    container_name: tts-redis-dev
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-dev-data:/data
+    networks:
+      - tts-dev-network
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis-dev:6379
+    depends_on:
+      - redis-dev
+    networks:
+      - tts-dev-network
+
+volumes:
+  redis-dev-data:
+
+networks:
+  tts-dev-network:
+    driver: bridge
