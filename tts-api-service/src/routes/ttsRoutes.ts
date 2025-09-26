@@ -1,10 +1,10 @@
 import express from 'express';
 import multer from 'multer';
 import { body, param, query, validationResult } from 'express-validator';
-import { TTSService } from '../services/TTSService';
 import { logger } from '../utils/logger';
 import { AppError } from '../utils/AppError';
 import { asyncHandler } from '../utils/asyncHandler';
+import { TTSServiceFactory } from '@/services/TTSServiceFactory';
 
 const router = express.Router();
 const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
@@ -73,7 +73,7 @@ router.post(
     const userId = (req.user as any)?.id;
 
     try {
-      const ttsService = TTSService.getInstance();
+  const ttsService = TTSServiceFactory.createTTSService();
       const result = await ttsService.synthesizeText(req.body, userId);
 
       // Log usage analytics
@@ -136,7 +136,7 @@ router.post(
 router.get(
   '/voices',
   asyncHandler(async (req: express.Request, res: express.Response) => {
-    const ttsService = TTSService.getInstance();
+  const ttsService = TTSServiceFactory.createTTSService();
     const voices = ttsService.getAvailableVoices();
 
     // Group voices by language for better organization
@@ -167,7 +167,7 @@ router.get(
     const { jobId } = req.params;
     const userId = (req.user as any)?.id;
 
-    const ttsService = TTSService.getInstance();
+  const ttsService = TTSServiceFactory.createTTSService();
     const job = await ttsService.getJobStatus(jobId);
 
     if (!job) {
@@ -206,7 +206,7 @@ router.get(
     const { jobId } = req.params;
     const userId = (req.user as any)?.id;
 
-    const ttsService = TTSService.getInstance();
+  const ttsService = TTSServiceFactory.createTTSService();
     const job = await ttsService.getJobStatus(jobId);
 
     if (!job) {
@@ -248,7 +248,7 @@ router.get(
   asyncHandler(async (req: express.Request, res: express.Response) => {
     const { jobId } = req.params;
 
-    const ttsService = TTSService.getInstance();
+  const ttsService = TTSServiceFactory.createTTSService();
     const audioBuffer = await ttsService.getJobResult(jobId);
 
     if (!audioBuffer) {
@@ -283,7 +283,7 @@ router.post(
     const { requests } = req.body;
     const userId = (req.user as any)?.id;
 
-    const ttsService = TTSService.getInstance();
+  const ttsService = TTSServiceFactory.createTTSService();
     const jobs = [];
 
     for (const request of requests) {

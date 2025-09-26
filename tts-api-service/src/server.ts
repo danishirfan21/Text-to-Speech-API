@@ -12,8 +12,8 @@ import authRoutes from './routes/authRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import { connectRedis } from './config/redis';
 import { logger } from './utils/logger';
-import { TTSService } from './services/TTSService';
 import { CacheService } from './services/CacheService';
+import { TTSServiceFactory } from './services/TTSServiceFactory';
 
 class TTSAPIServer {
   private app: express.Application;
@@ -130,16 +130,25 @@ class TTSAPIServer {
       await connectRedis();
       logger.info('Connected to Redis');
 
-      // Initialize services
-      await TTSService.initialize();
+      // Initialize Redis connection
+      await connectRedis();
+      logger.info('Connected to Redis');
+
+      // Initialize TTS services based on provider
+      const ttsProvider = process.env.TTS_PROVIDER || 'huggingface';
+      logger.info(`Initializing TTS service with provider: ${ttsProvider}`);
+      // Initialize the selected TTS service
+      const ttsService = TTSServiceFactory.createTTSService();
+      await (ttsService as any).constructor.initialize();
       await CacheService.initialize();
 
-      logger.info('TTS services initialized');
+      logger.info(`TTS services initialized with ${ttsProvider} provider`);
 
       // Start server
       this.app.listen(this.port, () => {
         logger.info(`TTS API Server running on port ${this.port}`);
         logger.info(`Environment: ${config.nodeEnv}`);
+        logger.info(`TTS Provider: ${ttsProvider}`);
         logger.info(`Documentation: http://localhost:${this.port}/api/docs`);
       });
     } catch (error) {

@@ -1,3 +1,22 @@
+export const ttsConfig = {
+  // TTS Provider: 'google' | 'huggingface' | 'mock'
+  provider: process.env.TTS_PROVIDER || 'huggingface',
+  // Hugging Face configuration (optional)
+  huggingface: {
+    apiKey: process.env.HUGGINGFACE_API_KEY, // Optional - works without it
+    apiUrl: process.env.HUGGINGFACE_API_URL || 'https://api-inference.huggingface.co/models',
+    defaultModel: process.env.HUGGINGFACE_DEFAULT_MODEL || 'microsoft/speecht5_tts',
+  },
+  // Google Cloud configuration (keep existing)
+  googleCloud: {
+    projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || 'your-project-id',
+    keyFile: process.env.GOOGLE_CLOUD_KEY_FILE || './keys/google-cloud-key.json',
+  },
+  // Mock configuration
+  mock: {
+    enabled: process.env.NODE_ENV === 'development',
+  },
+};
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -25,12 +44,20 @@ export const config = {
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
 
-  // Google Cloud TTS configuration
-  googleCloud: {
-    projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || 'your-project-id',
-    keyFile:
-      process.env.GOOGLE_CLOUD_KEY_FILE ||
-      path.join(__dirname, '../keys/google-cloud-key.json'),
+  // TTS Provider configuration
+  tts: {
+    provider: (process.env.TTS_PROVIDER as 'google' | 'huggingface' | 'mock') || 'huggingface',
+    // Hugging Face configuration
+    huggingface: {
+      apiKey: process.env.HUGGINGFACE_API_KEY, // Optional
+      apiUrl: process.env.HUGGINGFACE_API_URL || 'https://api-inference.huggingface.co/models',
+      defaultModel: process.env.HUGGINGFACE_DEFAULT_MODEL || 'microsoft/speecht5_tts',
+    },
+    // Google Cloud configuration (keep existing)
+    googleCloud: {
+      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || 'your-project-id',
+      keyFile: process.env.GOOGLE_CLOUD_KEY_FILE || path.join(__dirname, '../keys/google-cloud-key.json'),
+    },
   },
 
   // CORS configuration
