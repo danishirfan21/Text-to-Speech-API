@@ -11,9 +11,8 @@ export class CacheService {
     this.redis = new Redis({
       host: config.redis.host,
       port: config.redis.port,
-      password: config.redis.password,
+      password: config.redis.password || '',
       db: config.redis.db,
-      retryDelayOnFailover: 100,
       maxRetriesPerRequest: 3,
       lazyConnect: true,
     });
@@ -140,15 +139,15 @@ export class CacheService {
       const keyCount = await this.redis.dbsize();
 
       const memoryMatch = info.match(/used_memory_human:(.+)\r/);
-      const memoryUsage = memoryMatch ? memoryMatch[1] : '0B';
+        const memoryUsage = memoryMatch ? memoryMatch[1] ?? '0B' : '0B';
 
       // Calculate hit rate from Redis stats
       const stats = await this.redis.info('stats');
       const hitsMatch = stats.match(/keyspace_hits:(\d+)/);
       const missesMatch = stats.match(/keyspace_misses:(\d+)/);
 
-      const hits = hitsMatch ? parseInt(hitsMatch[1]) : 0;
-      const misses = missesMatch ? parseInt(missesMatch[1]) : 0;
+        const hits = hitsMatch ? parseInt(hitsMatch[1] ?? '0') : 0;
+        const misses = missesMatch ? parseInt(missesMatch[1] ?? '0') : 0;
       const hitRate = hits + misses > 0 ? (hits / (hits + misses)) * 100 : 0;
 
       return {
@@ -157,7 +156,7 @@ export class CacheService {
         hitRate: Math.round(hitRate * 100) / 100,
       };
     } catch (error) {
-      logger.error('Error getting cache stats:', error);
+  logger.error('Error getting cache stats:', error);
       return { totalKeys: 0, memoryUsage: '0B', hitRate: 0 };
     }
   }

@@ -87,7 +87,7 @@ export const createRateLimiter = (
 ) => {
   const requests = new Map();
 
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     const key = req.ip;
     const now = Date.now();
     const windowStart = now - windowMs;
@@ -105,11 +105,12 @@ export const createRateLimiter = (
     const userRequests = requests.get(key);
 
     if (userRequests.length >= max) {
-      return res.status(429).json({
+      res.status(429).json({
         error: 'Rate limit exceeded',
         message,
         retryAfter: Math.ceil(windowMs / 1000),
       });
+      return;
     }
 
     userRequests.push(now);

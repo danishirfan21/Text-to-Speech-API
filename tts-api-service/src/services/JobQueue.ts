@@ -6,7 +6,8 @@ import { SynthesisJob } from './TTSService';
 export class JobQueue extends EventEmitter {
   private cacheService: CacheService;
   private processingJobs: Set<string> = new Set();
-  private jobProcessor: NodeJS.Timer | null = null;
+  private jobProcessor: NodeJS.Timeout | null = null;
+  // Removed duplicate jobProcessor declaration
 
   constructor() {
     super();
@@ -39,7 +40,7 @@ export class JobQueue extends EventEmitter {
       logger.info('Job added to queue', { jobId: job.id, userId });
       this.emit('jobAdded', job);
     } catch (error) {
-      logger.error('Failed to add job to queue:', error);
+        logger.error('Failed to add job to queue:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -48,7 +49,7 @@ export class JobQueue extends EventEmitter {
     try {
       return await this.cacheService.get(`job:${jobId}`);
     } catch (error) {
-      logger.error('Failed to get job:', error);
+        logger.error('Failed to get job:', error instanceof Error ? error.message : String(error));
       return null;
     }
   }
@@ -68,7 +69,7 @@ export class JobQueue extends EventEmitter {
 
       this.emit('jobUpdated', updatedJob);
     } catch (error) {
-      logger.error('Failed to update job:', error);
+        logger.error('Failed to update job:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -78,7 +79,7 @@ export class JobQueue extends EventEmitter {
       try {
         await this.processNextJob();
       } catch (error) {
-        logger.error('Job processor error:', error);
+          logger.error('Job processor error:', error instanceof Error ? error.message : String(error));
       }
     }, 1000); // Process jobs every second
   }
@@ -116,9 +117,9 @@ export class JobQueue extends EventEmitter {
 
   private async processJob(jobId: string): Promise<void> {
     const job = await this.getJob(jobId);
-    if (!job) {
-      logger.error('Job not found for processing:', jobId);
-      return;
+      if (!job) {
+        logger.error('Job not found for processing:', jobId);
+        return;
     }
 
     try {
@@ -172,11 +173,11 @@ export class JobQueue extends EventEmitter {
         size: audioBuffer.length,
       });
     } catch (error) {
-      logger.error('Job processing failed:', { jobId, error: error.message });
-
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logger.error('Job processing failed:', { jobId, error: errorMsg });
       await this.updateJob(jobId, {
         status: 'failed',
-        error: error.message,
+        error: errorMsg,
         completedAt: new Date(),
       });
     }
@@ -190,7 +191,6 @@ export class JobQueue extends EventEmitter {
   }> {
     try {
       const redis = (this.cacheService as any).redis;
-
       const pendingKeys = await redis.keys('tts:queue:pending:*');
       const processing = this.processingJobs.size;
 
@@ -215,14 +215,14 @@ export class JobQueue extends EventEmitter {
         failed,
       };
     } catch (error) {
-      logger.error('Failed to get queue stats:', error);
+      logger.error('Failed to get queue stats:', error instanceof Error ? error.message : String(error));
       return { pending: 0, processing: 0, completed: 0, failed: 0 };
     }
   }
 
   destroy(): void {
     if (this.jobProcessor) {
-      clearInterval(this.jobProcessor);
+      clearInterval(this.jobProcessor as NodeJS.Timeout);
       this.jobProcessor = null;
     }
   }

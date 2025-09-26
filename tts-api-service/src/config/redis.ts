@@ -12,9 +12,8 @@ export async function connectRedis(): Promise<Redis> {
   redisClient = new Redis({
     host: config.redis.host,
     port: config.redis.port,
-    password: config.redis.password,
+    password: config.redis.password || '',
     db: config.redis.db,
-    retryDelayOnFailover: 100,
     maxRetriesPerRequest: 3,
     lazyConnect: true,
   });

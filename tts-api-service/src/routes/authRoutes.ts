@@ -1,6 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { Secret } from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import { config } from '../config/config';
 import { logger } from '../utils/logger';
@@ -160,34 +160,42 @@ const userStore = new UserStore();
 // JWT Token utilities
 export class TokenService {
   static generateAccessToken(user: User): string {
-    return jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        tier: user.tier,
-      },
-      config.jwt.secret,
-      {
-        expiresIn: config.jwt.expiresIn,
-        issuer: 'tts-api',
-        audience: 'tts-api-client',
-      }
-    );
+    const secret = config.jwt.secret;
+    if (!secret || typeof secret !== 'string') throw new Error('JWT secret is missing or not a string');
+    const payload = {
+      id: user.id,
+      email: user.email,
+      tier: user.tier,
+    };
+    let expiresIn: string | number = config.jwt.expiresIn;
+    if (!isNaN(Number(expiresIn))) {
+      expiresIn = Number(expiresIn);
+    }
+    const options = {
+      expiresIn,
+      issuer: 'tts-api',
+      audience: 'tts-api-client',
+    } as any;
+    return jwt.sign(payload, secret as Secret, options);
   }
 
   static generateRefreshToken(user: User): string {
-    return jwt.sign(
-      {
-        id: user.id,
-        type: 'refresh',
-      },
-      config.jwt.refreshSecret,
-      {
-        expiresIn: config.jwt.refreshExpiresIn,
-        issuer: 'tts-api',
-        audience: 'tts-api-client',
-      }
-    );
+    const secret = config.jwt.refreshSecret;
+    if (!secret || typeof secret !== 'string') throw new Error('JWT refreshSecret is missing or not a string');
+    const payload = {
+      id: user.id,
+      type: 'refresh',
+    };
+    let refreshExpiresIn: string | number = config.jwt.refreshExpiresIn;
+    if (!isNaN(Number(refreshExpiresIn))) {
+      refreshExpiresIn = Number(refreshExpiresIn);
+    }
+    const options = {
+      expiresIn: refreshExpiresIn,
+      issuer: 'tts-api',
+      audience: 'tts-api-client',
+    } as any;
+    return jwt.sign(payload, secret as Secret, options);
   }
 
   static verifyAccessToken(token: string): any {
@@ -246,12 +254,13 @@ const handleValidationErrors = (
 ) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Validation failed',
-      details: errors.array(),
-    });
-  }
-  next();
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: errors.array(),
+      });
+    }
+    next();
+    return;
 };
 
 // POST /api/auth/register - User registration

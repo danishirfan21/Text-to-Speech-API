@@ -55,10 +55,11 @@ const handleValidationErrors = (
 ) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'Validation failed',
       details: errors.array(),
     });
+    return;
   }
   next();
 };
@@ -116,18 +117,17 @@ router.post(
       }
 
       throw new AppError('Unexpected response format', 500);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Synthesis failed:', {
         userId,
-        error: error.message,
-        stack: error.stack,
+        error: error?.message,
+        stack: error?.stack,
         requestBody: {
           ...req.body,
           text: req.body.text?.slice(0, 100) + '...',
         },
       });
-
-      throw new AppError(`Synthesis failed: ${error.message}`, 500);
+      throw new AppError(`Synthesis failed: ${error?.message}`, 500);
     }
   })
 );
@@ -144,7 +144,7 @@ router.get(
       if (!acc[voice.languageCode]) {
         acc[voice.languageCode] = [];
       }
-      acc[voice.languageCode].push(voice);
+  (acc[voice.languageCode] ?? []).push(voice);
       return acc;
     }, {} as { [key: string]: typeof voices });
 
@@ -164,10 +164,10 @@ router.get(
   param('jobId').isUUID().withMessage('Invalid job ID format'),
   handleValidationErrors,
   asyncHandler(async (req: express.Request, res: express.Response) => {
-    const { jobId } = req.params;
+    const jobId = req.params.jobId as string;
     const userId = (req.user as any)?.id;
 
-  const ttsService = TTSServiceFactory.createTTSService();
+    const ttsService = TTSServiceFactory.createTTSService();
     const job = await ttsService.getJobStatus(jobId);
 
     if (!job) {
@@ -175,21 +175,21 @@ router.get(
     }
 
     // Basic authorization check (in production, implement proper ownership verification)
-    const response = {
-      id: job.id,
-      status: job.status,
-      progress: job.progress,
-      createdAt: job.createdAt,
-      completedAt: job.completedAt,
-      error: job.error,
+    const response: any = {
+      id: (job as any).id,
+      status: (job as any).status,
+      progress: (job as any).progress,
+      createdAt: (job as any).createdAt,
+      completedAt: (job as any).completedAt,
+      error: (job as any).error,
     };
 
-    if (job.status === 'completed' && job.result) {
+    if ((job as any).status === 'completed' && (job as any).result) {
       response.result = {
         downloadUrl: `/api/tts/download/${jobId}`,
-        duration: job.result.duration,
-        size: job.result.size,
-        audioEncoding: job.request.audioConfig?.audioEncoding || 'MP3',
+        duration: (job as any).result.duration,
+        size: (job as any).result.size,
+        audioEncoding: (job as any).request.audioConfig?.audioEncoding || 'MP3',
       };
     }
 
@@ -203,19 +203,19 @@ router.get(
   param('jobId').isUUID().withMessage('Invalid job ID format'),
   handleValidationErrors,
   asyncHandler(async (req: express.Request, res: express.Response) => {
-    const { jobId } = req.params;
+    const jobId = req.params.jobId as string;
     const userId = (req.user as any)?.id;
 
-  const ttsService = TTSServiceFactory.createTTSService();
+    const ttsService = TTSServiceFactory.createTTSService();
     const job = await ttsService.getJobStatus(jobId);
 
     if (!job) {
       throw new AppError('Job not found', 404);
     }
 
-    if (job.status !== 'completed') {
+    if ((job as any).status !== 'completed') {
       throw new AppError(
-        `Job not completed. Current status: ${job.status}`,
+        `Job not completed. Current status: ${(job as any).status}`,
         400
       );
     }
@@ -225,7 +225,7 @@ router.get(
       throw new AppError('Audio file not found or expired', 404);
     }
 
-    const audioEncoding = job.request.audioConfig?.audioEncoding || 'MP3';
+    const audioEncoding = (job as any).request.audioConfig?.audioEncoding || 'MP3';
     const contentType = getContentType(audioEncoding);
     const extension = getFileExtension(audioEncoding);
 
@@ -246,9 +246,9 @@ router.get(
   param('jobId').isUUID().withMessage('Invalid job ID format'),
   handleValidationErrors,
   asyncHandler(async (req: express.Request, res: express.Response) => {
-    const { jobId } = req.params;
+    const jobId = req.params.jobId as string;
 
-  const ttsService = TTSServiceFactory.createTTSService();
+    const ttsService = TTSServiceFactory.createTTSService();
     const audioBuffer = await ttsService.getJobResult(jobId);
 
     if (!audioBuffer) {
@@ -258,18 +258,18 @@ router.get(
     // In production, implement audio trimming to 30 seconds
     const previewBuffer = audioBuffer.slice(
       0,
-      Math.min(audioBuffer.length, 480000)
-    ); // Rough 30s estimate
+      Math.min(audioBuffer.length, 30 * 32000)
+    );
 
     res.set({
       'Content-Type': 'audio/mpeg',
-      'Accept-Ranges': 'bytes',
+      'Content-Disposition': `inline; filename="preview_${jobId}.mp3"`,
       'Content-Length': previewBuffer.length.toString(),
+      'Cache-Control': 'private, max-age=600', // 10 min cache
     });
-
-    res.send(previewBuffer);
-  })
-);
+      res.send(previewBuffer);
+    })
+  );
 
 // POST /api/tts/batch - Batch synthesis for multiple texts
 router.post(
@@ -297,11 +297,16 @@ router.post(
     res.status(202).json({
       status: 'accepted',
       message: `${jobs.length} synthesis jobs queued`,
-      jobs: jobs.map((job) => ({
-        id: job.id,
-        statusUrl: `/api/tts/status/${job.id}`,
-        downloadUrl: `/api/tts/download/${job.id}`,
-      })),
+      jobs: jobs.map((job) => {
+        if (typeof job === 'object' && 'id' in job) {
+          return {
+            id: (job as any).id,
+            statusUrl: `/api/tts/status/${(job as any).id}`,
+            downloadUrl: `/api/tts/download/${(job as any).id}`,
+          };
+        }
+        return {};
+      }),
     });
   })
 );
@@ -324,5 +329,7 @@ function getFileExtension(audioEncoding: string): string {
   };
   return extensions[audioEncoding] || 'mp3';
 }
+
+// ...existing code...
 
 export default router;

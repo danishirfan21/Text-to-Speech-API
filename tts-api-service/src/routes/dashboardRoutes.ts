@@ -61,7 +61,7 @@ router.get(
       logger.error('Failed to get dashboard stats:', error);
       res.status(500).json({
         error: 'Failed to retrieve statistics',
-        message: error.message,
+        message: (error as any)?.message,
       });
     }
   })
@@ -128,7 +128,7 @@ router.get(
       logger.error('Failed to get synthesis history:', error);
       res.status(500).json({
         error: 'Failed to retrieve history',
-        message: error.message,
+        message: (error as any)?.message,
       });
     }
   })
@@ -164,7 +164,7 @@ router.get(
       logger.error('Failed to get voice analytics:', error);
       res.status(500).json({
         error: 'Failed to retrieve voice analytics',
-        message: error.message,
+        message: (error as any)?.message,
       });
     }
   })
@@ -211,7 +211,7 @@ router.get(
       logger.error('Failed to get performance metrics:', error);
       res.status(500).json({
         error: 'Failed to retrieve performance metrics',
-        message: error.message,
+        message: (error as any)?.message,
       });
     }
   })
@@ -240,7 +240,7 @@ router.post(
         newTier: tier,
       });
 
-      res.json({
+      return res.json({
         message: 'Tier updated successfully',
         newTier: tier,
         newLimits: {
@@ -258,9 +258,9 @@ router.post(
       });
     } catch (error) {
       logger.error('Failed to upgrade user tier:', error);
-      res.status(500).json({
+      return res.status(500).json({
         error: 'Failed to upgrade tier',
-        message: error.message,
+        message: (error as any)?.message,
       });
     }
   })

@@ -61,8 +61,8 @@ export class TTSService {
 
   constructor() {
     this.ttsClient = new TextToSpeechClient({
-      keyFilename: config.googleCloud.keyFile,
-      projectId: config.googleCloud.projectId,
+      keyFilename: config.tts.googleCloud.keyFile,
+      projectId: config.tts.googleCloud.projectId,
     });
     this.jobQueue = new JobQueue();
     this.cacheService = new CacheService();
@@ -91,7 +91,7 @@ export class TTSService {
         response.voices?.map((voice) => ({
           name: voice.name || '',
           languageCode: voice.languageCodes?.[0] || '',
-          ssmlGender: voice.ssmlGender || 'NEUTRAL',
+          ssmlGender: String(voice.ssmlGender || 'NEUTRAL'),
           naturalSampleRateHertz: voice.naturalSampleRateHertz || 22050,
           description: `${voice.languageCodes?.[0]} - ${voice.ssmlGender}`,
         })) || [];
@@ -178,9 +178,9 @@ export class TTSService {
       await this.cacheService.set(cacheKey, audioBuffer, 3600); // 1 hour cache
 
       return audioBuffer;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Text synthesis failed:', error);
-      throw new Error(`Synthesis failed: ${error.message}`);
+      throw new Error(`Synthesis failed: ${error?.message}`);
     }
   }
 
@@ -239,9 +239,9 @@ export class TTSService {
     const audioChunks: Buffer[] = [];
 
     for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      const chunkBuffer = await this.performSynthesis(chunk, request);
-      audioChunks.push(chunkBuffer);
+  const chunk = chunks[i] ?? '';
+  const chunkBuffer = await this.performSynthesis(chunk, request);
+  audioChunks.push(chunkBuffer);
     }
 
     // Concatenate all audio chunks
