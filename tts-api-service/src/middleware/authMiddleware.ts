@@ -1,3 +1,23 @@
+import express from 'express';
+import { TokenService, userStore } from '../routes/authRoutes';
+import { AppError } from '../utils/AppError';
+import { asyncHandler } from '../utils/asyncHandler';
+
+interface User {
+  id: string;
+  email: string;
+  tier: 'free' | 'premium';
+  apiKey: string;
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User;
+    }
+  }
+}
+
 export const authMiddleware = asyncHandler(
   async (
     req: express.Request,
@@ -20,7 +40,7 @@ export const authMiddleware = asyncHandler(
     }
 
     try {
-      let user: User | null = null;
+      let user: any = null;
 
       if (token) {
         // JWT authentication
@@ -45,5 +65,3 @@ export const authMiddleware = asyncHandler(
     }
   }
 );
-
-

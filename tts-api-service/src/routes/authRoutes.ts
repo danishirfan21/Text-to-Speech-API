@@ -6,6 +6,7 @@ import { config } from '../config/config';
 import { logger } from '../utils/logger';
 import { AppError } from '../utils/AppError';
 import { asyncHandler } from '../utils/asyncHandler';
+import { authMiddleware } from '../middleware/authMiddleware';
 
 // In production, this would be a proper database
 // For demo purposes, using in-memory storage
