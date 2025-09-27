@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text‑to‑Speech Service</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Text‑to‑Speech Service</h1>
+      <nav id="user-nav" class="hidden">
+        <span id="user-email"></span>
+        <button id="logout-button" type="button">Logout</button>
+      </nav>
+    </header>
+    <main>
+      <!-- Authentication section -->
+      <div id="auth-section">
+        <!-- Login form -->
+        <div id="login-form" class="form-container">
+          <h2>Login</h2>
+          <form>
+            <label for="login-email">Email</label>
+            <input
+              type="email"
+              id="login-email"
+              placeholder="Enter your email"
+              required
+            />
+            <label for="login-password">Password</label>
+            <input
+              type="password"
+              id="login-password"
+              placeholder="Enter your password"
+              required
+            />
+            <button type="submit">Login</button>
+          </form>
+          <p>
+            No account?
+            <a href="#" id="show-register">Register here</a>
+          </p>
+          <div id="login-error" class="error-message"></div>
+        </div>
+        <!-- Registration form -->
+        <div id="register-form" class="form-container hidden">
+          <h2>Create an account</h2>
+          <form>
+            <label for="register-email">Email</label>
+            <input
+              type="email"
+              id="register-email"
+              placeholder="Enter your email"
+              required
+            />
+            <label for="register-password">Password</label>
+            <input
+              type="password"
+              id="register-password"
+              placeholder="Enter a strong password"
+              required
+            />
+            <label for="register-tier">Tier</label>
+            <select id="register-tier">
+              <option value="free">Free</option>
+              <option value="premium">Premium</option>
+            </select>
+            <button type="submit">Register</button>
+          </form>
+          <p>
+            Already registered?
+            <a href="#" id="show-login">Sign in</a>
+          </p>
+          <div id="register-error" class="error-message"></div>
+        </div>
+      </div>
+
+      <!-- Main synthesis section -->
+      <div id="synth-section" class="hidden">
+        <h2>Synthesize Text</h2>
+        <form id="synth-form">
+          <label for="synth-text">Text</label>
+          <textarea
+            id="synth-text"
+            rows="4"
+            placeholder="Enter text to convert to speech"
+            required
+          ></textarea>
+
+          <div class="row">
+            <div class="column">
+              <label for="language-select">Language</label>
+              <select id="language-select"></select>
+            </div>
+            <div class="column">
+              <label for="voice-select">Voice</label>
+              <select id="voice-select"></select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="column">
+              <label for="audio-format">Audio format</label>
+              <select id="audio-format">
+                <option value="MP3">MP3</option>
+                <option value="WAV">WAV</option>
+                <option value="OGG_OPUS">OGG</option>
+              </select>
+            </div>
+            <div class="column">
+              <label for="speaking-rate">Speaking rate</label>
+              <input
+                type="number"
+                id="speaking-rate"
+                min="0.25"
+                max="4"
+                step="0.1"
+                value="1.0"
+              />
+            </div>
+            <div class="column">
+              <label for="pitch">Pitch</label>
+              <input
+                type="number"
+                id="pitch"
+                min="-20"
+                max="20"
+                step="1"
+                value="0"
+              />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="column">
+              <label for="volume-gain">Volume (dB)</label>
+              <input
+                type="number"
+                id="volume-gain"
+                min="-96"
+                max="16"
+                step="1"
+                value="0"
+              />
+            </div>
+            <div class="column checkbox-column">
+              <label for="async-checkbox">Async</label>
+              <input type="checkbox" id="async-checkbox" />
+            </div>
+            <div class="column checkbox-column">
+              <label for="streaming-checkbox">Streaming</label>
+              <input type="checkbox" id="streaming-checkbox" />
+            </div>
+          </div>
+
+          <button type="submit">Synthesize</button>
+        </form>
+        <div id="synth-error" class="error-message"></div>
+        <div id="synth-result" class="hidden">
+          <h3>Audio Preview</h3>
+          <audio id="audio-player" controls></audio>
+          <a id="download-link" href="" download>Download</a>
+        </div>
+      </div>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -42,6 +42,10 @@ class TTSAPIServer {
       })
     );
 
+    // Debug log for allowed origins
+    // eslint-disable-next-line no-console
+    console.log('CORS allowed origins:', config.allowedOrigins);
+
     // CORS configuration
     this.app.use(
       cors({

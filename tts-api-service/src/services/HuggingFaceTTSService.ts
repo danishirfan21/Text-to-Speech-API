@@ -58,12 +58,12 @@ export class HuggingFaceTTSService {
   private readonly hfApiKey = process.env.HUGGINGFACE_API_KEY; // Optional, works without it
   private readonly hfApiUrl = 'https://api-inference.huggingface.co/models';
   
-  // Available models - free to use!
+  // Use a single public model for all voices for now
   private readonly models = {
-    'en-US-female': 'microsoft/speecht5_tts',
-    'en-US-male': 'facebook/fastspeech2-en-ljspeech', 
+    'en-US-female': 'espnet/kan-bayashi_ljspeech_vits',
+    'en-US-male': 'espnet/kan-bayashi_ljspeech_vits',
     'multilingual': 'espnet/kan-bayashi_ljspeech_vits',
-    'coqui-tts': 'coqui/XTTS-v2' // High quality model
+    'coqui-tts': 'espnet/kan-bayashi_ljspeech_vits'
   };
 
   constructor() {

@@ -36,9 +36,7 @@ export const config = {
 
   // JWT configuration
   jwt: {
-    secret:
-      process.env.JWT_SECRET ||
-      'your-super-secret-jwt-key-change-in-production',
+    secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key',
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
@@ -56,7 +54,8 @@ export const config = {
     // Google Cloud configuration (keep existing)
     googleCloud: {
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || 'your-project-id',
-      keyFile: process.env.GOOGLE_CLOUD_KEY_FILE || path.join(__dirname, '../keys/google-cloud-key.json'),
+      keyFile:
+        process.env.GOOGLE_CLOUD_KEY_FILE || path.join(__dirname, '../keys/google-cloud-key.json'),
     },
   },
 
@@ -64,6 +63,7 @@ export const config = {
   allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [
     'http://localhost:3000',
     'http://localhost:3001',
+     'http://localhost:8080', // Allow frontend dev server
   ],
 
   // File storage
