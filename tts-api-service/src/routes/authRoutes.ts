@@ -1,3 +1,10 @@
+
+
+
+
+
+
+
 import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt, { Secret } from 'jsonwebtoken';
@@ -7,219 +14,14 @@ import { logger } from '../utils/logger';
 import { AppError } from '../utils/AppError';
 import { asyncHandler } from '../utils/asyncHandler';
 import { authMiddleware } from '../middleware/authMiddleware';
+import { User } from '../types/User';
+
+import { userStore } from '../store/userStore';
+import { TokenService } from '../utils/TokenService';
 
 // In production, this would be a proper database
 // For demo purposes, using in-memory storage
-interface User {
-  id: string;
-  email: string;
-  passwordHash: string;
-  tier: 'free' | 'premium';
-  apiKey: string;
-  createdAt: Date;
-  lastLogin?: Date;
-  usageStats: {
-    totalRequests: number;
-    totalCharacters: number;
-    monthlyRequests: number;
-    resetDate: Date;
-  };
-}
 
-class UserStore {
-  private users: Map<string, User> = new Map();
-  private emailToId: Map<string, string> = new Map();
-
-  constructor() {
-    // Create demo users for testing
-    this.createDemoUsers();
-  }
-
-  private async createDemoUsers() {
-    const demoUsers = [
-      {
-        email: 'demo@speechify.com',
-        password: 'demo123',
-        tier: 'premium' as const,
-      },
-      {
-        email: 'free@user.com',
-        password: 'free123',
-        tier: 'free' as const,
-      },
-    ];
-
-    for (const userData of demoUsers) {
-      const passwordHash = await bcrypt.hash(userData.password, 12);
-      const user: User = {
-        id: `user_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-        email: userData.email,
-        passwordHash,
-        tier: userData.tier,
-        apiKey: `sk_${Math.random().toString(36).slice(2, 15)}${Date.now()}`,
-        createdAt: new Date(),
-        usageStats: {
-          totalRequests: 0,
-          totalCharacters: 0,
-          monthlyRequests: 0,
-          resetDate: new Date(),
-        },
-      };
-
-      this.users.set(user.id, user);
-      this.emailToId.set(user.email, user.id);
-    }
-  }
-
-  async createUser(
-    email: string,
-    password: string,
-    tier: 'free' | 'premium' = 'free'
-  ): Promise<User> {
-    if (this.emailToId.has(email)) {
-      throw new AppError('User already exists', 400);
-    }
-
-    const passwordHash = await bcrypt.hash(password, 12);
-    const user: User = {
-      id: `user_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-      email,
-      passwordHash,
-      tier,
-      apiKey: `sk_${Math.random().toString(36).slice(2, 15)}${Date.now()}`,
-      createdAt: new Date(),
-      usageStats: {
-        totalRequests: 0,
-        totalCharacters: 0,
-        monthlyRequests: 0,
-        resetDate: new Date(),
-      },
-    };
-
-    this.users.set(user.id, user);
-    this.emailToId.set(email, user.id);
-    return user;
-  }
-
-  async findByEmail(email: string): Promise<User | null> {
-    const userId = this.emailToId.get(email);
-    return userId ? this.users.get(userId) || null : null;
-  }
-
-  async findById(id: string): Promise<User | null> {
-    return this.users.get(id) || null;
-  }
-
-  async findByApiKey(apiKey: string): Promise<User | null> {
-    for (const user of this.users.values()) {
-      if (user.apiKey === apiKey) {
-        return user;
-      }
-    }
-    return null;
-  }
-
-  async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
-    const user = this.users.get(id);
-    if (!user) return null;
-
-    const updatedUser = { ...user, ...updates };
-    this.users.set(id, updatedUser);
-    return updatedUser;
-  }
-
-  async incrementUsage(
-    userId: string,
-    requests: number = 1,
-    characters: number = 0
-  ): Promise<void> {
-    const user = this.users.get(userId);
-    if (!user) return;
-
-    user.usageStats.totalRequests += requests;
-    user.usageStats.totalCharacters += characters;
-    user.usageStats.monthlyRequests += requests;
-
-    // Reset monthly stats if needed
-    const now = new Date();
-    const resetDate = user.usageStats.resetDate;
-    if (
-      now.getMonth() !== resetDate.getMonth() ||
-      now.getFullYear() !== resetDate.getFullYear()
-    ) {
-      user.usageStats.monthlyRequests = requests;
-      user.usageStats.resetDate = now;
-    }
-
-    this.users.set(userId, user);
-  }
-}
-
-const userStore = new UserStore();
-
-// JWT Token utilities
-export class TokenService {
-  static generateAccessToken(user: User): string {
-    const secret = config.jwt.secret;
-    if (!secret || typeof secret !== 'string') throw new Error('JWT secret is missing or not a string');
-    const payload = {
-      id: user.id,
-      email: user.email,
-      tier: user.tier,
-    };
-    let expiresIn: string | number = config.jwt.expiresIn;
-    if (!isNaN(Number(expiresIn))) {
-      expiresIn = Number(expiresIn);
-    }
-    const options = {
-      expiresIn,
-      issuer: 'tts-api',
-      audience: 'tts-api-client',
-    } as any;
-    return jwt.sign(payload, secret as Secret, options);
-  }
-
-  static generateRefreshToken(user: User): string {
-    const secret = config.jwt.refreshSecret;
-    if (!secret || typeof secret !== 'string') throw new Error('JWT refreshSecret is missing or not a string');
-    const payload = {
-      id: user.id,
-      type: 'refresh',
-    };
-    let refreshExpiresIn: string | number = config.jwt.refreshExpiresIn;
-    if (!isNaN(Number(refreshExpiresIn))) {
-      refreshExpiresIn = Number(refreshExpiresIn);
-    }
-    const options = {
-      expiresIn: refreshExpiresIn,
-      issuer: 'tts-api',
-      audience: 'tts-api-client',
-    } as any;
-    return jwt.sign(payload, secret as Secret, options);
-  }
-
-  static verifyAccessToken(token: string): any {
-    try {
-      return jwt.verify(token, config.jwt.secret, {
-        issuer: 'tts-api',
-        audience: 'tts-api-client',
-      });
-    } catch (error) {
-      throw new AppError('Invalid or expired token', 401);
-    }
-  }
-
-  static verifyRefreshToken(token: string): any {
-    try {
-      return jwt.verify(token, config.jwt.refreshSecret, {
-        issuer: 'tts-api',
-        audience: 'tts-api-client',
-      });
-    } catch (error) {
-      throw new AppError('Invalid or expired refresh token', 401);
-    }
-  }
-}
 
 // Authentication Routes
 const router = express.Router();
@@ -319,7 +121,7 @@ router.post(
       throw new AppError('Invalid credentials', 401);
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+  const isPasswordValid = await bcrypt.compare(password, user.passwordHash || '');
     if (!isPasswordValid) {
       throw new AppError('Invalid credentials', 401);
     }
@@ -422,5 +224,6 @@ router.post(
   })
 );
 
-export { userStore };
+
 export default router;
+// JWT Token utilities

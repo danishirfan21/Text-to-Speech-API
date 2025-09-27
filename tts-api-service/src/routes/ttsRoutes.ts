@@ -4,7 +4,7 @@ import { body, param, query, validationResult } from 'express-validator';
 import { logger } from '../utils/logger';
 import { AppError } from '../utils/AppError';
 import { asyncHandler } from '../utils/asyncHandler';
-import { TTSServiceFactory } from '@/services/TTSServiceFactory';
+import { TTSServiceFactory } from '../services/TTSServiceFactory';
 
 const router = express.Router();
 const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit

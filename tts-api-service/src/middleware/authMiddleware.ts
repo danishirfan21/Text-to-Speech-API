@@ -1,14 +1,11 @@
 import express from 'express';
-import { TokenService, userStore } from '../routes/authRoutes';
+import { TokenService } from '../utils/TokenService';
+import { userStore } from '../store/userStore';
+import { User } from '../types/User';
 import { AppError } from '../utils/AppError';
 import { asyncHandler } from '../utils/asyncHandler';
 
-interface User {
-  id: string;
-  email: string;
-  tier: 'free' | 'premium';
-  apiKey: string;
-}
+
 
 declare global {
   namespace Express {

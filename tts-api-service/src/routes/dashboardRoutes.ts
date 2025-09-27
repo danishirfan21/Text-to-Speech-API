@@ -2,7 +2,7 @@ import express from 'express';
 import { TTSService } from '../services/TTSService';
 import { CacheService } from '../services/CacheService';
 import { JobQueue } from '../services/JobQueue';
-import { userStore } from './authRoutes';
+import { userStore } from '../store/userStore';
 import { logger } from '../utils/logger';
 import { asyncHandler } from '../utils/asyncHandler';
 
@@ -45,11 +45,11 @@ router.get(
         },
         usage: {
           ...usageStats,
-          monthlyRequests: userInfo?.usageStats.monthlyRequests || 0,
+          monthlyRequests: userInfo?.usageStats?.monthlyRequests || 0,
           limit: user.tier === 'premium' ? 1000 : 100,
           remaining:
             (user.tier === 'premium' ? 1000 : 100) -
-            (userInfo?.usageStats.monthlyRequests || 0),
+            (userInfo?.usageStats?.monthlyRequests || 0),
         },
         system: {
           cache: cacheStats,
