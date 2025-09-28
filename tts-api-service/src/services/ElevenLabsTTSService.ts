@@ -184,18 +184,31 @@ export class ElevenLabsTTSService {
 
 			logger.info(`Using ElevenLabs voice: ${voiceId} (${voiceName || 'default'})`);
 
-			const audioBuffer = await this.elevenLabs.textToSpeech({
-				voiceId,
-				text,
-				modelId: 'eleven_monolingual_v1', // or 'eleven_multilingual_v1' for more languages
-				outputFormat: 'mp3',
-			});
+			   const fs = require('fs');
+			   const path = require('path');
+			   const tmpFile = path.join(__dirname, `tts-output-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.mp3`);
+			   const result = await this.elevenLabs.textToSpeech({
+				   voiceId,
+				   fileName: tmpFile,
+				   textInput: text,
+				   modelId: 'eleven_monolingual_v1', // or 'eleven_multilingual_v1' for more languages
+				   // Add other params as needed
+			   });
 
-			if (!audioBuffer || audioBuffer.length === 0) {
-				throw new Error('No audio content received from ElevenLabs API');
-			}
+			   if (!fs.existsSync(tmpFile)) {
+				   logger.error('ElevenLabs API did not produce an audio file', { result });
+				   throw new Error('No audio content received from ElevenLabs API');
+			   }
 
-			return Buffer.from(audioBuffer);
+			   const audioBuffer = fs.readFileSync(tmpFile);
+			   fs.unlinkSync(tmpFile); // Clean up temp file
+
+			   if (!audioBuffer || audioBuffer.length === 0) {
+				   logger.error('Audio file was empty', { result });
+				   throw new Error('No audio content received from ElevenLabs API');
+			   }
+
+			   return audioBuffer;
 		} catch (error: any) {
 			logger.error('Synthesis error:', error);
 			throw error;
