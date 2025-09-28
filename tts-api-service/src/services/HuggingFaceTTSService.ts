@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ElevenLabsClient } from 'elevenlabs-node';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
 import { CacheService } from './CacheService';
@@ -53,23 +53,16 @@ export class HuggingFaceTTSService {
   private cacheService: CacheService;
   private textPreprocessor: TextPreprocessor;
   private availableVoices: Voice[] = [];
-  
-  // Hugging Face API configuration
-  private readonly hfApiKey = process.env.HUGGINGFACE_API_KEY; // Optional, works without it
-  private readonly hfApiUrl = 'https://api-inference.huggingface.co/models';
-  
-  // Use a single public model for all voices for now
-  private readonly models = {
-    'en-US-female': 'espnet/kan-bayashi_ljspeech_vits',
-    'en-US-male': 'espnet/kan-bayashi_ljspeech_vits',
-    'multilingual': 'espnet/kan-bayashi_ljspeech_vits',
-    'coqui-tts': 'espnet/kan-bayashi_ljspeech_vits'
-  };
+  private elevenLabs: any;
+  private readonly defaultVoiceId = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL';
 
   constructor() {
     this.jobQueue = new JobQueue();
     this.cacheService = new CacheService();
     this.textPreprocessor = new TextPreprocessor();
+    this.elevenLabs = new ElevenLabsClient({
+      apiKey: process.env.ELEVENLABS_API_KEY || '',
+    });
     this.initializeVoices();
   }
 
@@ -89,32 +82,32 @@ export class HuggingFaceTTSService {
   private initializeVoices(): void {
     this.availableVoices = [
       {
-        name: 'en-US-SpeechT5-Female',
+        name: 'Rachel',
         languageCode: 'en-US',
         ssmlGender: 'FEMALE',
         naturalSampleRateHertz: 22050,
-        description: 'US English - Female (SpeechT5)',
+        description: 'ElevenLabs - Rachel (default)',
       },
       {
-        name: 'en-US-FastSpeech2-Male',
-        languageCode: 'en-US', 
+        name: 'Domi',
+        languageCode: 'en-US',
+        ssmlGender: 'FEMALE',
+        naturalSampleRateHertz: 22050,
+        description: 'ElevenLabs - Domi',
+      },
+      {
+        name: 'Bella',
+        languageCode: 'en-US',
+        ssmlGender: 'FEMALE',
+        naturalSampleRateHertz: 22050,
+        description: 'ElevenLabs - Bella',
+      },
+      {
+        name: 'Antoni',
+        languageCode: 'en-US',
         ssmlGender: 'MALE',
         naturalSampleRateHertz: 22050,
-        description: 'US English - Male (FastSpeech2)',
-      },
-      {
-        name: 'multilingual-VITS',
-        languageCode: 'en-US',
-        ssmlGender: 'NEUTRAL',
-        naturalSampleRateHertz: 22050,
-        description: 'Multilingual - Neutral (VITS)',
-      },
-      {
-        name: 'en-US-XTTS-High',
-        languageCode: 'en-US',
-        ssmlGender: 'NEUTRAL', 
-        naturalSampleRateHertz: 24000,
-        description: 'US English - High Quality (XTTS-v2)',
+        description: 'ElevenLabs - Antoni',
       },
     ];
   }
@@ -123,147 +116,43 @@ export class HuggingFaceTTSService {
     return this.availableVoices;
   }
 
-  public async synthesizeText(
-    request: SynthesisRequest,
-    userId: string
-  ): Promise<SynthesisJob | Buffer> {
-    try {
-      // Preprocess text
-      const processedText = await this.textPreprocessor.process(request.text);
-
-      // Generate cache key
-      const cacheKey = this.generateCacheKey(processedText, request);
-
-      // Check cache first
-      const cachedResult = await this.cacheService.get(cacheKey);
-      if (cachedResult) {
-        logger.info('Returning cached audio result');
-        return cachedResult;
-      }
-
-      // Handle async requests
-      if (request.async) {
-        const job: SynthesisJob = {
-          id: uuidv4(),
-          status: 'pending',
-          progress: 0,
-          request: { ...request, text: processedText },
-          createdAt: new Date(),
-        };
-
-        await this.jobQueue.addJob(job, userId);
-        return job;
-      }
-
-      // Handle streaming requests
-      if (request.streaming) {
-        return this.synthesizeStreaming(processedText, request, cacheKey);
-      }
-
-      // Synchronous synthesis
-      const audioBuffer = await this.performSynthesis(processedText, request);
-
-      // Cache result
-      await this.cacheService.set(cacheKey, audioBuffer, 3600);
-
-      return audioBuffer;
-    } catch (error: any) {
-      logger.error('Text synthesis failed:', error);
-      throw new Error(`Synthesis failed: ${error.message}`);
-    }
-  }
-
-  private async performSynthesis(
+  public async performSynthesis(
     text: string,
     request: SynthesisRequest
   ): Promise<Buffer> {
     try {
-      // Select model based on voice preference
-      const voiceName = request.voice?.name || 'en-US-SpeechT5-Female';
-      let modelName = this.models['en-US-female']; // default
-      
-      if (voiceName.includes('Male') || voiceName.includes('MALE')) {
-        modelName = this.models['en-US-male'];
-      } else if (voiceName.includes('XTTS')) {
-        modelName = this.models['coqui-tts'];
-      } else if (voiceName.includes('multilingual')) {
-        modelName = this.models['multilingual'];
+      let voiceId = this.defaultVoiceId;
+      const voiceName = request.voice?.name;
+      const voiceMap: Record<string, string> = {
+        'Rachel': 'EXAVITQu4vr4xnSDxMaL',
+        'Domi': 'AZnzlk1XvdvUeBnXmlld',
+        'Bella': 'EXAVITQu4vr4xnSDxMaL', // Replace with actual Bella ID
+        'Antoni': 'ErXwobaYiN019PkySvjV',
+      };
+      if (voiceName && voiceMap[voiceName]) {
+        voiceId = voiceMap[voiceName];
       }
 
-      logger.info(`Using TTS model: ${modelName} for voice: ${voiceName}`);
+      logger.info(`Using ElevenLabs voice: ${voiceId} (${voiceName || 'default'})`);
 
-      // Call Hugging Face Inference API
-      const response = await this.callHuggingFaceAPI(modelName, text);
-      
-      if (!response || (response as ArrayBuffer).byteLength === 0) {
-        throw new Error('No audio content received from Hugging Face API');
+      const audioBuffer = await this.elevenLabs.textToSpeech({
+        voiceId,
+        text,
+        modelId: 'eleven_monolingual_v1', // or 'eleven_multilingual_v1' for more languages
+        outputFormat: 'mp3',
+      });
+
+      if (!audioBuffer || audioBuffer.length === 0) {
+        throw new Error('No audio content received from ElevenLabs API');
       }
 
-      return Buffer.from(response as ArrayBuffer);
-
+      return Buffer.from(audioBuffer);
     } catch (error: any) {
       logger.error('Synthesis error:', error);
-      
-      // Fallback to mock audio for demo purposes
-      if (error.message && (error.message.includes('rate limit') || error.message.includes('model loading'))) {
-        logger.warn('Using fallback mock audio due to API limitations');
-        return this.generateMockAudio(text);
-      }
-      
       throw error;
     }
   }
 
-  private async callHuggingFaceAPI(modelName: string, text: string): Promise<ArrayBuffer> {
-    const headers: any = {
-      'Content-Type': 'application/json',
-    };
-
-    // Add API key if available (optional - works without it)
-    if (this.hfApiKey) {
-      headers['Authorization'] = `Bearer ${this.hfApiKey}`;
-    }
-
-    try {
-      const response = await axios.post(
-        `${this.hfApiUrl}/${modelName}`,
-        { 
-          inputs: text,
-          parameters: {
-            // Optional parameters for better quality
-            max_length: 1000,
-            do_sample: true,
-            temperature: 0.7
-          }
-        },
-        {
-          headers,
-          responseType: 'arraybuffer',
-          timeout: 30000, // 30 second timeout
-        }
-      );
-
-      return response.data;
-
-    } catch (error: any) {
-      if (error.response?.status === 503) {
-        // Model is loading, wait a bit and retry
-        logger.info('Model loading, waiting 10 seconds...');
-        await new Promise(resolve => setTimeout(resolve, 10000));
-        
-        // Retry once
-        const retryResponse = await axios.post(
-          `${this.hfApiUrl}/${modelName}`,
-          { inputs: text },
-          { headers, responseType: 'arraybuffer', timeout: 30000 }
-        );
-        
-        return retryResponse.data;
-      }
-      
-      throw new Error(`Hugging Face API error: ${error.response?.status} - ${error.message}`);
-    }
-  }
 
   private async synthesizeStreaming(
     text: string,
@@ -328,7 +217,7 @@ export class HuggingFaceTTSService {
       text: text.slice(0, 100),
       voice: request.voice,
       audioConfig: request.audioConfig,
-      service: 'huggingface'
+      service: 'elevenlabs' // Updated to reflect the removal of Hugging Face references
     };
 
     const keyString = JSON.stringify(keyData);
