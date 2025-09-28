@@ -1,4 +1,4 @@
-import { ElevenLabsClient } from 'elevenlabs-node';
+const ElevenLabsClient = require('elevenlabs-node');
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
 import { CacheService } from './CacheService';
