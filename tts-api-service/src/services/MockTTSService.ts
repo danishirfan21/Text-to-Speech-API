@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
-import { SynthesisRequest, SynthesisJob, Voice } from './HuggingFaceTTSService';
+import { SynthesisRequest, SynthesisJob, Voice } from './ElevenLabsTTSService';
 
 export class MockTTSService {
   private static instance: MockTTSService;

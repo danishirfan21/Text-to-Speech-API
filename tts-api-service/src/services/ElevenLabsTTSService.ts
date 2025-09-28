@@ -130,7 +130,7 @@ export class ElevenLabsTTSService {
 				'Antoni': 'ErXwobaYiN019PkySvjV',
 			};
 			if (voiceName && voiceMap[voiceName]) {
-				voiceId = voiceMap[voiceName];
+				voiceId = voiceMap[voiceName] || this.defaultVoiceId;
 			}
 
 			logger.info(`Using ElevenLabs voice: ${voiceId} (${voiceName || 'default'})`);

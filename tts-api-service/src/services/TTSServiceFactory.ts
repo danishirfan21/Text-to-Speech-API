@@ -1,6 +1,6 @@
 import { config } from '../config/config';
 import { TTSService } from './TTSService';
-import { HuggingFaceTTSService } from './HuggingFaceTTSService';
+import { ElevenLabsTTSService } from './ElevenLabsTTSService';
 import { MockTTSService } from './MockTTSService';
 
 export type TTSProvider = 'google' | 'huggingface' | 'mock';
@@ -13,11 +13,11 @@ export class TTSServiceFactory {
       case 'google':
         return TTSService.getInstance();
       case 'huggingface':
-        return HuggingFaceTTSService.getInstance();
+        return ElevenLabsTTSService.getInstance();
       case 'mock':
         return MockTTSService.getInstance();
       default:
-        return HuggingFaceTTSService.getInstance();
+        return ElevenLabsTTSService.getInstance();
     }
   }
 }

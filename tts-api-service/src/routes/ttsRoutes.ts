@@ -140,7 +140,7 @@ router.get(
     const voices = ttsService.getAvailableVoices();
 
     // Group voices by language for better organization
-    const groupedVoices = voices.reduce((acc, voice) => {
+  const groupedVoices = voices.reduce((acc: any, voice: any) => {
       if (!acc[voice.languageCode]) {
         acc[voice.languageCode] = [];
       }
