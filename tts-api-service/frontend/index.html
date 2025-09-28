@@ -8,17 +8,23 @@
   </head>
   <body>
     <header>
-      <h1>Text‑to‑Speech Service</h1>
-      <nav id="user-nav" class="hidden">
-        <span id="user-email"></span>
-        <button id="logout-button" type="button">Logout</button>
-      </nav>
+      <div class="header-content">
+        <div class="logo-title">
+          <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f50a.svg" alt="Speaker Icon" class="logo-icon" />
+          <h1>Text‑to‑Speech Service</h1>
+        </div>
+        <nav id="user-nav" class="hidden">
+          <span id="user-email"></span>
+          <button id="logout-button" type="button">Logout</button>
+        </nav>
+      </div>
     </header>
     <main>
-      <!-- Authentication section -->
-      <div id="auth-section">
-        <!-- Login form -->
-        <div id="login-form" class="form-container">
+      <div class="main-card">
+        <!-- Authentication section -->
+        <div id="auth-section">
+          <!-- Login form -->
+          <div id="login-form" class="form-container">
           <h2>Login</h2>
           <form>
             <label for="login-email">Email</label>
@@ -74,12 +80,12 @@
           </p>
           <div id="register-error" class="error-message"></div>
         </div>
-      </div>
+        </div>
 
-      <!-- Main synthesis section -->
-      <div id="synth-section" class="hidden">
-        <h2>Synthesize Text</h2>
-        <form id="synth-form">
+        <!-- Main synthesis section -->
+        <div id="synth-section" class="hidden">
+          <h2>Synthesize Text</h2>
+          <form id="synth-form">
           <label for="synth-text">Text</label>
           <textarea
             id="synth-text"
@@ -161,6 +167,7 @@
           <h3>Audio Preview</h3>
           <audio id="audio-player" controls></audio>
           <a id="download-link" href="" download>Download</a>
+          </div>
         </div>
       </div>
     </main>
