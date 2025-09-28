@@ -198,12 +198,14 @@ function initAuthHandlers() {
   // Registration submission handler
   registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    registerError.textContent = '';
+  registerError.textContent = '';
+  hideElement(registerError);
     const email = document.getElementById('register-email').value.trim();
     const password = document.getElementById('register-password').value;
     const tier = document.getElementById('register-tier').value;
     if (!email || !password) {
       registerError.textContent = 'Email and password are required.';
+      showElement(registerError);
       return;
     }
     try {
@@ -219,6 +221,7 @@ function initAuthHandlers() {
         } else {
           registerError.textContent = result?.error || result?.message || 'Registration failed';
         }
+        showElement(registerError);
         return;
       }
       // Auto login after registration
@@ -229,6 +232,10 @@ function initAuthHandlers() {
       await loadVoices();
     } catch (err) {
       registerError.textContent = 'Network error. Please try again.';
+      showElement(registerError);
+    }
+    if (!registerError.textContent) {
+      hideElement(registerError);
     }
   });
 }
@@ -263,16 +270,18 @@ function initSynthesisHandler() {
   const synthButton = synthForm.querySelector('button[type="submit"]');
 
   synthForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  synthError.textContent = '';
-  hideElement(synthResult);
-  synthButton.disabled = true;
-  synthButton.textContent = 'Synthesizing...';
+    e.preventDefault();
+    synthError.textContent = '';
+    hideElement(synthError);
+    hideElement(synthResult);
+    synthButton.disabled = true;
+    synthButton.textContent = 'Synthesizing...';
 
     // Gather input values
     const text = document.getElementById('synth-text').value.trim();
     if (!text) {
       synthError.textContent = 'Please enter text to synthesize.';
+      showElement(synthError);
       return;
     }
     const languageCode = document.getElementById('language-select').value;
@@ -313,6 +322,7 @@ function initSynthesisHandler() {
         // Try to parse error message
         const errorData = await response.json().catch(() => ({}));
         synthError.textContent = errorData?.error || errorData?.message || 'Synthesis failed';
+        showElement(synthError);
         return;
       }
       // If async, show status
@@ -324,6 +334,7 @@ function initSynthesisHandler() {
         } else {
           synthError.textContent = result.message || 'Unexpected response.';
         }
+        showElement(synthError);
         return;
       }
       // Otherwise treat response as binary audio
@@ -335,7 +346,11 @@ function initSynthesisHandler() {
       showElement(synthResult);
     } catch (err) {
       synthError.textContent = 'Network error. Please try again.';
+      showElement(synthError);
     } finally {
+      if (!synthError.textContent) {
+        hideElement(synthError);
+      }
       synthButton.disabled = false;
       synthButton.textContent = 'Synthesize';
     }
