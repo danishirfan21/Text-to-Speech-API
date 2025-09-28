@@ -116,6 +116,55 @@ export class ElevenLabsTTSService {
 		return this.availableVoices;
 	}
 
+		/**
+		 * Synthesize text to speech, matching the TTSService interface.
+		 * Handles async, streaming, and synchronous requests.
+		 */
+		public async synthesizeText(
+			request: SynthesisRequest,
+			userId: string
+		): Promise<SynthesisJob | Buffer> {
+			try {
+				// Preprocess text
+				const processedText = request.text;
+				// Generate cache key
+				const cacheKey = this.generateCacheKey(processedText, request);
+				// Check cache first
+				const cachedResult = await this.cacheService.get(cacheKey);
+				if (cachedResult) {
+					logger.info('Returning cached audio result');
+					return cachedResult;
+				}
+
+				// Handle async requests
+				if (request.async) {
+					const job: SynthesisJob = {
+						id: uuidv4(),
+						status: 'pending',
+						progress: 0,
+						request: { ...request, text: processedText },
+						createdAt: new Date(),
+					};
+					await this.jobQueue.addJob(job, userId);
+					return job;
+				}
+
+				// Handle streaming requests
+				if (request.streaming) {
+					return this.synthesizeStreaming(processedText, request, cacheKey);
+				}
+
+				// Synchronous synthesis
+				const audioBuffer = await this.performSynthesis(processedText, request);
+				// Cache result
+				await this.cacheService.set(cacheKey, audioBuffer, 3600); // 1 hour cache
+				return audioBuffer;
+			} catch (error: any) {
+				logger.error('Text synthesis failed:', error);
+				throw new Error(`Synthesis failed: ${error?.message}`);
+			}
+		}
+
 	public async performSynthesis(
 		text: string,
 		request: SynthesisRequest
