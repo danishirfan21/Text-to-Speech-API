@@ -260,11 +260,14 @@ function initSynthesisHandler() {
   const synthResult = document.getElementById('synth-result');
   const audioPlayer = document.getElementById('audio-player');
   const downloadLink = document.getElementById('download-link');
+  const synthButton = synthForm.querySelector('button[type="submit"]');
 
   synthForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    synthError.textContent = '';
-    hideElement(synthResult);
+  e.preventDefault();
+  synthError.textContent = '';
+  hideElement(synthResult);
+  synthButton.disabled = true;
+  synthButton.textContent = 'Synthesizing...';
 
     // Gather input values
     const text = document.getElementById('synth-text').value.trim();
@@ -332,6 +335,9 @@ function initSynthesisHandler() {
       showElement(synthResult);
     } catch (err) {
       synthError.textContent = 'Network error. Please try again.';
+    } finally {
+      synthButton.disabled = false;
+      synthButton.textContent = 'Synthesize';
     }
   });
 }
